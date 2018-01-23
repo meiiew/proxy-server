@@ -1,0 +1,16 @@
+{
+  "name": "doctoru",
+  "version": "2.0.0",
+  "description": "doctoru-2.0.0",
+  "main": "./server/index.js",
+  "scripts": {
+    "dev": "node server/index.js"
+  },
+  "author": "meiiew <932979128@qq.com>",
+  "license": "ISC",
+  "devDependencies": {
+    "del": "^3.0.0",
+    "http-proxy": "^1.16.2",
+    "opn": "^5.1.0"
+  }
+}
