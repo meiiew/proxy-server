@@ -7,17 +7,27 @@ let http = require('http'),
 	proxyMain = require('./proxy.js');
 	
 let proxy = new httpProxy.createProxyServer({
-	target : {
-		 host: proxyMain.forward.host,
-		 port: proxyMain.forward.port
-	}
-});
+		target : {
+			host: proxyMain.forward.host,
+			port: proxyMain.forward.port
+		}
+	}),
+	currentDirectory = "./",
+	fsWatch = {
+		timeData : {},
+		pollInterval : 1000
+	};
+
 proxy.on('error', function(err, req, res){
     console.log(err);
 });
 let server = http.createServer(function (request, response) {
-	let pathname = url.parse(request.url).pathname,
-		realPath = path.join("./", proxyMain.directory, pathname);
+	let pathname = /^\/static\//.test(url.parse(request.url).pathname)?
+			url.parse(request.url).pathname:
+				/^\/[a-zA-Z0-9]+\/[a-zA-Z0-9|\.|\/]*\.html/.test(url.parse(request.url).pathname) || /^\/[a-zA-Z0-9]+\/static\//.test(url.parse(request.url).pathname)?
+					url.parse(request.url).pathname.replace(/^\/[a-zA-Z0-9]+/mg,""):
+					url.parse(request.url).pathname,
+		realPath = path.join(currentDirectory, proxyMain.directory, pathname);
 	
 	for(let n in proxyMain.proxys){
 		if(~pathname.indexOf(n)){
@@ -57,11 +67,36 @@ let server = http.createServer(function (request, response) {
         }
     });
 });
-server.listen(proxyMain.port,proxyMain.host);
-server.on('upgrade', function (req, socket, head) {
-	proxy.ws(req, socket, head);
+function openServer(){
+	server.listen(proxyMain.port,proxyMain.host);
+	server.on('upgrade', function (req, socket, head) {
+		proxy.ws(req, socket, head);
+	});
+}
+function cloneServer(fun){
+	server.close(fun);
+}
+
+
+
+
+//监听文件
+fs.watch(currentDirectory,{
+	recursive : true,
+	interval : fsWatch.pollInterval
+},(event,file)=>{
+	clearTimeout(fsWatch.timeData);
+	fsWatch.timeData = setTimeout(function(){
+		cloneServer(function(){
+			openServer();
+			console.info("服务器已经重启");
+		});
+	},300);
 });
 
+
+
+openServer();
 opn('http://'+proxyMain.host+':' + proxyMain.port + proxyMain.access);
 
 
