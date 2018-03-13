@@ -4,7 +4,8 @@ let http = require('http'),
 	path = require('path'),
 	fs = require('fs'),
 	opn = require('opn'),
-	proxyMain = require('./proxy.js');
+	proxyMain = require('./proxy.js'),
+	clc = require('cli-color');//https://www.npmjs.com/package/cli-color
 	
 let proxy = new httpProxy.createProxyServer({
 		target : {
@@ -78,8 +79,6 @@ function cloneServer(fun){
 }
 
 
-
-
 //监听文件
 fs.watch(currentDirectory,{
 	recursive : true,
@@ -89,7 +88,11 @@ fs.watch(currentDirectory,{
 	fsWatch.timeData = setTimeout(function(){
 		cloneServer(function(){
 			openServer();
-			console.info("服务器已经重启");
+			process.stdout.write(clc.move.down(1));
+			process.stdout.write(clc.move.right(6));
+			console.info(clc.green("服务器已经重启！"));
+			process.stdout.write(clc.move.down(1));
+			console.info(clc.green("-----------------------------"));
 		});
 	},300);
 });

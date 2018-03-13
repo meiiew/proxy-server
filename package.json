@@ -2,14 +2,25 @@
   "name": "doctoru",
   "version": "2.0.0",
   "description": "doctoru-2.0.0",
-  "main": "./server/index.js",
+  "main": "./server/server.js",
   "scripts": {
     "dev": "node server/index.js"
   },
   "author": "meiiew <932979128@qq.com>",
   "license": "ISC",
   "devDependencies": {
+    "babel-core": "^6.26.0",
+    "babel-preset-env": "^1.6.1",
+    "cli-color": "^1.2.0",
     "del": "^3.0.0",
+    "gulp": "^3.9.1",
+    "gulp-babel": "^7.0.0",
+    "gulp-clean-css": "^3.9.0",
+    "gulp-htmlmin": "^4.0.0",
+    "gulp-less": "^3.3.2",
+    "gulp-rename": "^1.2.2",
+    "gulp-replace": "^0.6.1",
+    "gulp-uglify": "^3.0.0",
     "http-proxy": "^1.16.2",
     "opn": "^5.1.0"
   }
