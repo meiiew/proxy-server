@@ -7,67 +7,73 @@ let http = require('http'),
 	proxyMain = require('./proxy.js'),
 	clc = require('cli-color');//https://www.npmjs.com/package/cli-color
 	
-let proxy = new httpProxy.createProxyServer({
-		target : {
-			host: proxyMain.forward.host,
-			port: proxyMain.forward.port
-		}
-	}),
+let proxy= {},
+	server = {},
 	currentDirectory = "./",
 	fsWatch = {
 		timeData : {},
 		pollInterval : 1000
 	};
 
-proxy.on('error', function(err, req, res){
-    console.log(err);
-});
-let server = http.createServer(function (request, response) {
-	let pathname = /^\/static\//.test(url.parse(request.url).pathname)?
-			url.parse(request.url).pathname:
-				/^\/[a-zA-Z0-9]+\/[a-zA-Z0-9|\.|\/]*\.html/.test(url.parse(request.url).pathname) || /^\/[a-zA-Z0-9]+\/static\//.test(url.parse(request.url).pathname)?
-					url.parse(request.url).pathname.replace(/^\/[a-zA-Z0-9]+/mg,""):
-					url.parse(request.url).pathname,
-		realPath = path.join(currentDirectory, proxyMain.directory, pathname);
-	
-	for(let n in proxyMain.proxys){
-		if(~pathname.indexOf(n)){
-			for(let r in proxyMain.proxys[n].pathRewrite){
-				pathname = pathname.replace(r,proxyMain.proxys[n].pathRewrite[r]);
-			}
-			proxy.web(request, response, {//可配置参数，见注释1
-	        	target: proxyMain.proxys[n].target+pathname,
-	        	changeOrigin : proxyMain.proxys[n].changeOrigin,
-	        	prependPath : false
-	       	});
-			return;
+function setProxy(){
+	proxy = new httpProxy.createProxyServer({
+		target : {
+			host: proxyMain.forward.host,
+			port: proxyMain.forward.port
 		}
-	}
-	
-	fs.exists(realPath, function (exists) {
-        if (!exists) {
-            response.writeHead(404, {
-                'Content-Type': 'text/plain'
-            });
-            response.write("This request URL " + pathname + " was not found on this server.");
-            response.end();
-        } else {
-            fs.readFile(realPath, "binary", function (err, file) {
-                if (err) {
-                    response.writeHead(500, {
-                        'Content-Type': 'text/plain'
-                    });
-                    response.end();
-                } else {
-                	let contentType = proxyMain.contentType[path.extname(realPath).replace(/^./mg,'')] || 'text/plain';//判断请求后缀
-                	response.writeHead('200',{'Content-Type':contentType,'Access-Control-Allow-Origin':'*','Cache-Control':'max-age=604800, public','cookie':'aaa=bbb'});
-                    response.write(file, "binary");
-                    response.end();
-                }
-            });
-        }
-    });
-});
+	})
+	proxy.on('error', function(err, req, res){
+	    console.log(err);
+	});
+}
+function setServer(){
+	server = http.createServer(function (request, response) {
+		let pathname = /^\/static\//.test(url.parse(request.url).pathname)?
+				url.parse(request.url).pathname:
+					/^\/[a-zA-Z0-9]+\/[a-zA-Z0-9|\.|\/]*\.html/.test(url.parse(request.url).pathname) || /^\/[a-zA-Z0-9]+\/static\//.test(url.parse(request.url).pathname)?
+						url.parse(request.url).pathname.replace(/^\/[a-zA-Z0-9]+/mg,""):
+						url.parse(request.url).pathname,
+			realPath = path.join(currentDirectory, proxyMain.directory, pathname);
+		
+		for(let n in proxyMain.proxys){
+			if(~pathname.indexOf(n)){
+				for(let r in proxyMain.proxys[n].pathRewrite){
+					pathname = pathname.replace(r,proxyMain.proxys[n].pathRewrite[r]);
+				}
+				proxy.web(request, response, {//可配置参数，见注释1
+		        	target: proxyMain.proxys[n].target+pathname,
+		        	changeOrigin : proxyMain.proxys[n].changeOrigin,
+		        	prependPath : false
+		       	});
+				return;
+			}
+		}
+		
+		fs.exists(realPath, function (exists) {
+	        if (!exists) {
+	            response.writeHead(404, {
+	                'Content-Type': 'text/plain'
+	            });
+	            response.write("This request URL " + pathname + " was not found on this server.");
+	            response.end();
+	        } else {
+	            fs.readFile(realPath, "binary", function (err, file) {
+	                if (err) {
+	                    response.writeHead(500, {
+	                        'Content-Type': 'text/plain'
+	                    });
+	                    response.end();
+	                } else {
+	                	let contentType = proxyMain.contentType[path.extname(realPath).replace(/^./mg,'')] || 'text/plain';//判断请求后缀
+	                	response.writeHead('200',{'Content-Type':contentType,'Access-Control-Allow-Origin':'*','Cache-Control':'max-age=604800, public','cookie':'aaa=bbb'});
+	                    response.write(file, "binary");
+	                    response.end();
+	                }
+	            });
+	        }
+	    });
+	});
+};
 function openServer(){
 	server.listen(proxyMain.port,proxyMain.host);
 	server.on('upgrade', function (req, socket, head) {
@@ -78,27 +84,34 @@ function cloneServer(fun){
 	server.close(fun);
 }
 
-
 //监听文件
-fs.watch(currentDirectory,{
-	recursive : true,
-	interval : fsWatch.pollInterval
-},(event,file)=>{
-	clearTimeout(fsWatch.timeData);
-	fsWatch.timeData = setTimeout(function(){
-		cloneServer(function(){
-			openServer();
-			process.stdout.write(clc.move.down(1));
-			process.stdout.write(clc.move.right(6));
-			console.info(clc.green("服务器已经重启！"));
-			process.stdout.write(clc.move.down(1));
-			console.info(clc.green("-----------------------------"));
-		});
-	},300);
-});
+function watchFile(){
+	fs.watch(currentDirectory,{
+		recursive : true,
+		interval : fsWatch.pollInterval
+	},(event,file)=>{
+		clearTimeout(fsWatch.timeData);
+		fsWatch.timeData = setTimeout(function(){
+			
+			delete require.cache[require.resolve('./proxy.js')];
+			proxyMain = require('./proxy.js');
+			
+			
+			cloneServer(function(){
+				openServer();
+				process.stdout.write(clc.move.down(1));
+				process.stdout.write(clc.move.right(6));
+				console.info(clc.green("服务器已经重启！"));
+				process.stdout.write(clc.move.down(1));
+				console.info(clc.green("-----------------------------"));
+			});
+		},300);
+	});
+}
 
-
-
+setProxy();
+setServer();
+watchFile();
 openServer();
 opn('http://'+proxyMain.host+':' + proxyMain.port + proxyMain.access);
 

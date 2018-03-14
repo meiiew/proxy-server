@@ -2,27 +2,13 @@ const proxy = {
 	host : "127.0.0.1",
 	port : 8083,
 	directory : "",
-	access : "/app/index.html",
+	access : "/index.html",
 	proxys :{
-		'/api': {
-			target: 'http://test.antibody.cn',
+		'/mengoo/': {
+			target: 'http://192.168.199.2',
 			changeOrigin: true,
 			pathRewrite: {
-				'/api': ''
-			}
-		},
-		'/doctoru/': {
-			target: 'http://test.antibody.cn',
-			changeOrigin: true,
-			pathRewrite: {
-				'/doctoru/': '/doctoru/'
-			}
-		},
-		'/local': {
-			target: 'http://test.antibody.cn',
-			changeOrigin: true,
-			pathRewrite: {
-				'/local': '/xs/src/'
+				'/mengoo/': '/mengoo/'
 			}
 		}
 	},
