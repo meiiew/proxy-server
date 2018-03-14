@@ -81,6 +81,7 @@ function openServer(){
 	});
 }
 function cloneServer(fun){
+	server.removeAllListeners('upgrade');
 	server.close(fun);
 }
 
