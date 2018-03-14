@@ -75,7 +75,8 @@ function setServer(){
 	});
 };
 function openServer(){
-	server.listen(proxyMain.port,proxyMain.host);
+//	server.listen(proxyMain.port,proxyMain.host);如果指定host就只能本地访问了
+	server.listen(proxyMain.port);
 	server.on('upgrade', function (req, socket, head) {
 		proxy.ws(req, socket, head);
 	});
